@@ -2,18 +2,24 @@ import os
 
 from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
 from pydantic import BaseModel, EmailStr
-
+from .documents import router as documents_router
+from .grants import router as grants_router
+from .admin import router as admin_router
 from .auth import (SESSION_COOKIE, SESSION_TTL, create_session, current_user,
                    get_db, hash_token, verify_credentials)
 from .db import Base, engine
 from . import models
 from .models import Session, User
 from .documents import router as documents_router
+from .grants import router as grants_router
 Base.metadata.create_all(engine)
 
 app = FastAPI(title="TrustVault")
 
+
 app.include_router(documents_router)
+app.include_router(grants_router)
+app.include_router(admin_router)
 class LoginIn(BaseModel):
     email: EmailStr
     password: str

@@ -2,7 +2,7 @@ import hashlib
 import os
 import re
 from pathlib import Path
-
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import or_
@@ -95,19 +95,37 @@ async def upload(request: Request,
 
 
 @router.get("")
-def list_documents(user: User = Depends(current_user), db=Depends(get_db)):
-    """Only documents the caller owns or was granted. The filter is IN the query."""
+def list_documents(q: str | None = None, owner: str | None = None,
+                   category: str | None = None,
+                   date_from: datetime | None = None, date_to: datetime | None = None,
+                   user: User = Depends(current_user), db=Depends(get_db)):
+    """Search by name, owner email, category and date. The access filter is
+    always applied first, inside the query, so search can never reveal other people's files."""
+    def utc(d):
+        return d if d is None or d.tzinfo else d.replace(tzinfo=timezone.utc)
+
     granted = db.query(Grant.document_id).filter(Grant.user_id == user.id)
-    docs = (db.query(Document)
-              .filter(Document.deleted_at.is_(None),
-                      or_(Document.owner_id == user.id, Document.id.in_(granted)))
-              .order_by(Document.created_at.desc()).all())
+    query = (db.query(Document, User)
+               .join(User, User.id == Document.owner_id)
+               .filter(Document.deleted_at.is_(None),
+                       or_(Document.owner_id == user.id, Document.id.in_(granted))))
+    if q:
+        query = query.filter(Document.name.ilike(f"%{q}%"))
+    if owner:
+        query = query.filter(User.email.ilike(f"%{owner}%"))
+    if category:
+        query = query.filter(Document.category == category)
+    if date_from:
+        query = query.filter(Document.created_at >= utc(date_from))
+    if date_to:
+        query = query.filter(Document.created_at <= utc(date_to))
+
     perms = {g.document_id: g.permission
              for g in db.query(Grant).filter(Grant.user_id == user.id)}
     return [{"id": d.id, "name": d.name, "category": d.category, "size": d.size,
-             "created_at": d.created_at,
+             "owner": o.email, "created_at": d.created_at,
              "access": "owner" if d.owner_id == user.id else perms.get(d.id)}
-            for d in docs]
+            for d, o in query.order_by(Document.created_at.desc()).limit(200).all()]
 
 
 @router.get("/{doc_id}/download")
