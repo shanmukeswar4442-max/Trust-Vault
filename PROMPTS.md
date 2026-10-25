@@ -23,3 +23,8 @@ Honest log of how I used AI on TrustVault. Entries are written as I go.
 - **Produced:** first a `token_version` scheme, then server-side sessions with hashed tokens.
 - **Wrong / needed checking:** the token_version idea is JWT-style and cannot revoke without a DB check; the first auth sketch also defaulted the cookie `secure` flag in a way that is easy to forget in production.
 - **Did instead:** sessions table with hashed tokens, `is_active` re-checked on every request, `secure` cookie default ON. Commit: <hash>
+### 2026-10-25: Mutation check on authorisation
+- **Asked:** for attack tests covering cross-user access, revocation and audit.
+- **Produced:** 16 tests.
+- **Wrong / checked:** one revocation test asserted the whole list was empty and failed for the wrong reason (shared test DB). Fixed to check the specific document. Then I removed the guard from download: 6 tests failed (stranger, admin, read-grantee, revoke, deleted, audit), proving they test the check.
+- **Did instead:** restored the guard. Commit: <hash>

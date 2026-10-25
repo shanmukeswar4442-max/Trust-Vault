@@ -147,3 +147,5 @@ def test_search_does_not_leak(clients, doc):
     assert doc not in viewer_ids
     assert doc not in owner2_ids
     assert doc in [d["id"] for d in clients["owner"].get("/documents?q=salary").json()]
+
+    
