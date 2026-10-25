@@ -18,3 +18,8 @@ Honest log of how I used AI on TrustVault. Entries are written as I go.
 - **Produced:** 4 tables plus `token_version` on users for session killing.
 - **Wrong / needed checking:** The AI first suggested JWT-style `token_version`, then later corrected itself to server-side sessions, because stateless tokens can't be revoked without a DB lookup, which breaks the "revocation is immediate" rule. It also used plain `DateTime`, which on SQLite returns naive datetimes and would crash the expiry check.
 - **Did instead:** Added a `sessions` table storing hashed tokens, removed `token_version`, and wrote a `UTCDateTime` type. Commit: <paste hash after committing>
+### 2026-10-20: Authentication
+- **Asked:** for login/logout and a way to kill sessions instantly.
+- **Produced:** first a `token_version` scheme, then server-side sessions with hashed tokens.
+- **Wrong / needed checking:** the token_version idea is JWT-style and cannot revoke without a DB check; the first auth sketch also defaulted the cookie `secure` flag in a way that is easy to forget in production.
+- **Did instead:** sessions table with hashed tokens, `is_active` re-checked on every request, `secure` cookie default ON. Commit: <hash>
