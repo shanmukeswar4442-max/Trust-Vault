@@ -10,6 +10,6 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine, autoflush=False)
 
 
-class Base(DeclarativeBase):                                                                                                                                                                                                                                                                                                                                                                                                                
+class Base(DeclarativeBase):
     """Every database table class will inherit from this."""
     pass
