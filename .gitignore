@@ -6,3 +6,6 @@ storage/
 .pytest_cache/
 jar.txt
 login.json
+secret.txt
+login_v.json
+jar_v.json

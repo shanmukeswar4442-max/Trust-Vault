@@ -8,12 +8,12 @@ from .auth import (SESSION_COOKIE, SESSION_TTL, create_session, current_user,
 from .db import Base, engine
 from . import models
 from .models import Session, User
-
+from .documents import router as documents_router
 Base.metadata.create_all(engine)
 
 app = FastAPI(title="TrustVault")
 
-
+app.include_router(documents_router)
 class LoginIn(BaseModel):
     email: EmailStr
     password: str
