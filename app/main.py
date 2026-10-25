@@ -1,6 +1,6 @@
 import os
-
-from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from .audit import record
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Response, Request
 from pydantic import BaseModel, EmailStr
 from .documents import router as documents_router
 from .grants import router as grants_router
@@ -47,13 +47,14 @@ def health():
 
 
 @app.post("/auth/login")
-def login(body: LoginIn, response: Response, db=Depends(get_db)):
+def login(body: LoginIn, request: Request, response: Response, db=Depends(get_db)):
+    ip = request.client.host if request.client else None
     user = verify_credentials(db, body.email, body.password)
     if user is None:
-        # Same message for wrong email, wrong password and disabled account.
-        # TODO (audit step): record a denied login event here.
+        record(db, None, "login", "denied", ip=ip, detail=f"email={body.email[:100]}")
         raise HTTPException(status_code=401, detail="Invalid credentials")
     token = create_session(db, user)
+    record(db, user.id, "login", "allowed", ip=ip)
     response.set_cookie(
         SESSION_COOKIE, token,
         httponly=True,                       # JavaScript cannot read it
@@ -79,3 +80,4 @@ def logout(response: Response,
 @app.get("/auth/me")
 def me(user: User = Depends(current_user)):
     return {"id": user.id, "email": user.email, "role": user.role}
+

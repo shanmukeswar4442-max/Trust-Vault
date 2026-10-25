@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import FileResponse
 from sqlalchemy import or_
-
+from pydantic import BaseModel, Field
 from .audit import record
 from .auth import current_user, get_db, require_role
 from .authz import authorize
@@ -141,3 +141,28 @@ def download(doc_id: str, request: Request,
         content_disposition_type="attachment",                  # never render inline
         headers={"X-Content-Type-Options": "nosniff",
                  "Cache-Control": "no-store"})
+        
+class DocPatch(BaseModel):
+    name: str | None = Field(default=None, max_length=255)
+    category: str | None = None
+
+
+@router.patch("/{doc_id}")
+def update_document(doc_id: str, body: DocPatch, request: Request,
+                    user: User = Depends(current_user), db=Depends(get_db)):
+    doc = guard(db, user, doc_id, "edit", request)      # owner or edit-grantee only
+    changes = []
+    if body.category is not None:
+        if not CATEGORY_RE.match(body.category):
+            raise HTTPException(422, "Invalid category")
+        changes.append(f"category {doc.category}->{body.category.strip()}")
+        doc.category = body.category.strip()
+    if body.name is not None:
+        new = clean_name(body.name)
+        changes.append(f"name {doc.name}->{new}")
+        doc.name = new
+    if not changes:
+        raise HTTPException(422, "Nothing to change")
+    record(db, user.id, "edit", "allowed", document_id=doc.id,
+           ip=ip_of(request), detail="; ".join(changes))
+    return {"id": doc.id, "name": doc.name, "category": doc.category}

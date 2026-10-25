@@ -148,4 +148,33 @@ def test_search_does_not_leak(clients, doc):
     assert doc not in owner2_ids
     assert doc in [d["id"] for d in clients["owner"].get("/documents?q=salary").json()]
 
-    
+def test_edit_permission_is_enforced(clients, doc):
+    patch = lambda who: clients[who].patch(f"/documents/{doc}", json={"category": "legal"})
+    assert patch("viewer").status_code == 404          # stranger
+    share(clients, doc, "viewer", "read")
+    assert patch("viewer").status_code == 404          # read-only grantee
+    share(clients, doc, "viewer", "edit")
+    assert patch("viewer").status_code == 200          # edit grantee
+    assert patch("owner2").status_code == 404
+
+
+def test_only_admin_manages_users(clients):
+    r = clients["owner"].post("/admin/users", json={
+        "email": "x@t.io", "password": "longenough-pw1", "role": "admin"})
+    assert r.status_code == 403
+    assert clients["viewer"].get("/admin/users").status_code == 403
+
+
+def test_disabled_user_loses_live_session(clients):
+    r = clients["admin"].post("/admin/users", json={
+        "email": "temp@t.io", "password": "longenough-pw1", "role": "viewer"})
+    assert r.status_code == 200
+    uid_ = r.json()["id"]
+    from fastapi.testclient import TestClient
+    from app.main import app
+    c = TestClient(app)
+    assert c.post("/auth/login", json={"email": "temp@t.io",
+                                       "password": "longenough-pw1"}).status_code == 200
+    assert c.get("/auth/me").status_code == 200
+    assert clients["admin"].post(f"/admin/users/{uid_}/disable").status_code == 200
+    assert c.get("/auth/me").status_code == 401        # same cookie, now dead
