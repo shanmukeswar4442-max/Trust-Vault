@@ -12,3 +12,9 @@ Honest log of how I used AI on TrustVault. Entries are written as I go.
 - **Produced:** a 5-day plan, FastAPI + SQLAlchemy stack, folder layout.
 - **Wrong / needed checking:** (to fill in as I find issues)
 - **Did instead:** (commit link)
+
+### 2026-10-20: Data model
+- **Asked:** for the database tables for per-document grants, sessions and a hash-chained audit log.
+- **Produced:** 4 tables plus `token_version` on users for session killing.
+- **Wrong / needed checking:** The AI first suggested JWT-style `token_version`, then later corrected itself to server-side sessions, because stateless tokens can't be revoked without a DB lookup, which breaks the "revocation is immediate" rule. It also used plain `DateTime`, which on SQLite returns naive datetimes and would crash the expiry check.
+- **Did instead:** Added a `sessions` table storing hashed tokens, removed `token_version`, and wrote a `UTCDateTime` type. Commit: <paste hash after committing>
