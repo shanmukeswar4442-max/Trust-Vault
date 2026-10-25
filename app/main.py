@@ -1,13 +1,59 @@
-from fastapi import FastAPI
+import os
 
+from fastapi import Cookie, Depends, FastAPI, HTTPException, Response
+from pydantic import BaseModel, EmailStr
+
+from .auth import (SESSION_COOKIE, SESSION_TTL, create_session, current_user,
+                   get_db, hash_token, verify_credentials)
 from .db import Base, engine
-from . import models  # noqa: F401  (importing registers the tables)
+from . import models
+from .models import Session, User
 
 Base.metadata.create_all(engine)
 
 app = FastAPI(title="TrustVault")
 
 
+class LoginIn(BaseModel):
+    email: EmailStr
+    password: str
+
+
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+@app.post("/auth/login")
+def login(body: LoginIn, response: Response, db=Depends(get_db)):
+    user = verify_credentials(db, body.email, body.password)
+    if user is None:
+        # Same message for wrong email, wrong password and disabled account.
+        # TODO (audit step): record a denied login event here.
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    token = create_session(db, user)
+    response.set_cookie(
+        SESSION_COOKIE, token,
+        httponly=True,                       # JavaScript cannot read it
+        samesite="strict",                   # not sent on cross-site requests (CSRF defence)
+        secure=os.getenv("COOKIE_SECURE", "1") == "1",
+        max_age=int(SESSION_TTL.total_seconds()),
+        path="/",
+    )
+    return {"id": user.id, "email": user.email, "role": user.role}
+
+
+@app.post("/auth/logout")
+def logout(response: Response,
+           user: User = Depends(current_user),
+           tv_session: str | None = Cookie(default=None),
+           db=Depends(get_db)):
+    db.query(Session).filter(Session.token_hash == hash_token(tv_session)).delete()
+    db.commit()
+    response.delete_cookie(SESSION_COOKIE, path="/")
+    return {"ok": True}
+
+
+@app.get("/auth/me")
+def me(user: User = Depends(current_user)):
+    return {"id": user.id, "email": user.email, "role": user.role}
