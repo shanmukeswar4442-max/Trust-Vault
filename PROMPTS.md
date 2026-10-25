@@ -1,5 +1,5 @@
-# PROMPTS.md
 
+<<<<<<< HEAD
 Honest log of how I used AI on TrustVault. Entries are written as I go.
 
 ## Reusable context I give the AI
@@ -28,3 +28,5 @@ Honest log of how I used AI on TrustVault. Entries are written as I go.
 - **Produced:** 16 tests.
 - **Wrong / checked:** one revocation test asserted the whole list was empty and failed for the wrong reason (shared test DB). Fixed to check the specific document. Then I removed the guard from download: 6 tests failed (stranger, admin, read-grantee, revoke, deleted, audit), proving they test the check.
 - **Did instead:** restored the guard. Commit: <hash>
+=======
+>>>>>>> ff63b64df4b304d3ae45fce187e188964e71458e
