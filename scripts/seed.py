@@ -13,20 +13,6 @@ ACCOUNTS = [
     ("viewer@trustvault.io", "viewer", os.getenv("SEED_VIEWER_PW", "Viewer-local-pw-1")),
 ]
 
-
-def main():
-    Base.metadata.create_all(engine)
-    db = SessionLocal()
-    try:
-        for email, role, pw in ACCOUNTS:
-            if db.query(User).filter(User.email == email).first():
-                print(f"exists: {email}")
-                continue
-            db.add(User(email=email, role=role, password_hash=hash_password(pw)))
-            print(f"created: {email} ({role})")
-        db.commit()
-    finally:
-        db.close()
 ENV_NAMES = {"admin": "SEED_ADMIN_PW", "owner": "SEED_OWNER_PW", "viewer": "SEED_VIEWER_PW"}
 
 
@@ -40,7 +26,7 @@ def main():
                 db.add(User(email=email, role=role, password_hash=hash_password(pw)))
                 print(f"created: {email} ({role})")
             elif os.getenv(ENV_NAMES[role]):
-                user.password_hash = hash_password(pw)   # demo accounts only
+                user.password_hash = hash_password(pw)
                 user.is_active = True
                 print(f"password reset: {email}")
             else:
