@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TrustVault</title>
+    <style>
+        body {
+            font-family: system-ui, sans-serif;
+            max-width: 900px;
+            margin: 2rem auto;
+            padding: 0 1rem
+        }
+
+        input,
+        select,
+        button {
+            padding: .4rem;
+            margin: .15rem
+        }
+
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: .5rem
+        }
+
+        td,
+        th {
+            border: 1px solid #ccc;
+            padding: .3rem;
+            text-align: left;
+            font-size: .9rem;
+            word-break: break-all
+        }
+
+        .err {
+            color: #b00020
+        }
+
+        .ok {
+            color: #087f23
+        }
+
+        .hidden {
+            display: none
+        }
+
+        .demo {
+            margin-top: 1rem;
+            padding: .5rem;
+            border: 1px dashed #999
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TrustVault</h1>
+    <p id="msg"></p>
+
+    <section id="loginBox">
+        <h2>Log in</h2>
+        <input id="email" placeholder="email" autocomplete="username">
+        <input id="password" type="password" placeholder="password" autocomplete="current-password">
+        <button id="loginBtn">Log in</button>
+        <div class="demo">
+            <b>Demo accounts (throwaway, for evaluation only)</b>
+            <table>
+                <tr>
+                    <th>Role</th>
+                    <th>Email</th>
+                    <th>Password</th>
+                </tr>
+                <tr>
+                    <td>Admin</td>
+                    <td>admin@trustvault.io</td>
+                    <td>YOUR_ADMIN_PW</td>
+                </tr>
+                <tr>
+                    <td>Owner</td>
+                    <td>owner@trustvault.io</td>
+                    <td>YOUR_OWNER_PW</td>
+                </tr>
+                <tr>
+                    <td>Viewer</td>
+                    <td>viewer@trustvault.io</td>
+                    <td>YOUR_VIEWER_PW</td>
+                </tr>
+            </table>
+            <small>Free hosting: the first request after idle can take ~50 seconds. Uploaded files are lost when the
+                server restarts.</small>
+        </div>
+    </section>
+
+    <section id="app" class="hidden">
+        <p>Signed in as <b id="who"></b> <button id="logoutBtn">Log out</button></p>
+
+        <section id="uploadBox" class="hidden">
+            <h2>Upload (pdf, png, jpg, txt; max 5 MB)</h2>
+            <input id="file" type="file">
+            <input id="cat" placeholder="category" value="general">
+            <button id="uploadBtn">Upload</button>
+        </section>
+
+        <h2>Documents</h2>
+        <input id="q" placeholder="name contains">
+        <input id="owner" placeholder="owner email">
+        <input id="category" placeholder="category">
+        <input id="from" type="date"> <input id="to" type="date">
+        <button id="searchBtn">Search</button>
+        <table>
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Owner</th>
+                    <th>Category</th>
+                    <th>Your access</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="docs"></tbody>
+        </table>
+        <div id="grants"></div>
+
+        <section id="adminBox" class="hidden">
+            <h2>Admin: audit log</h2>
+            <button id="auditBtn">Load recent events</button>
+            <button id="verifyBtn">Verify chain</button>
+            <p id="verifyOut"></p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Time</th>
+                        <th>Actor</th>
+                        <th>Action</th>
+                        <th>Outcome</th>
+                        <th>Doc</th>
+                        <th>Target</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody id="audit"></tbody>
+            </table>
+        </section>
+    </section>
+
+    <script src="/static/app.js"></script>
+</body>
+
+</html>

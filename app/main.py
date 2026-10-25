@@ -9,6 +9,9 @@ from .auth import (SESSION_COOKIE, SESSION_TTL, create_session, current_user,
                    get_db, hash_token, verify_credentials)
 from .db import Base, engine
 from . import models
+from pathlib import Path
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from .models import Session, User
 from .documents import router as documents_router
 from .grants import router as grants_router
@@ -20,6 +23,19 @@ app = FastAPI(title="TrustVault")
 app.include_router(documents_router)
 app.include_router(grants_router)
 app.include_router(admin_router)
+
+STATIC = Path(__file__).resolve().parent.parent / "static"
+CSP = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; frame-ancestors 'none'"
+
+app.mount("/static", StaticFiles(directory=STATIC), name="static")
+
+
+@app.get("/", include_in_schema=False)
+def home():
+    return FileResponse(STATIC / "index.html",
+                        headers={"Content-Security-Policy": CSP,
+                                 "X-Content-Type-Options": "nosniff",
+                                 "Cache-Control": "no-store"})
 class LoginIn(BaseModel):
     email: EmailStr
     password: str

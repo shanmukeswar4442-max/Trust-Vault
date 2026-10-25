@@ -27,7 +27,27 @@ def main():
         db.commit()
     finally:
         db.close()
+ENV_NAMES = {"admin": "SEED_ADMIN_PW", "owner": "SEED_OWNER_PW", "viewer": "SEED_VIEWER_PW"}
 
+
+def main():
+    Base.metadata.create_all(engine)
+    db = SessionLocal()
+    try:
+        for email, role, pw in ACCOUNTS:
+            user = db.query(User).filter(User.email == email).first()
+            if user is None:
+                db.add(User(email=email, role=role, password_hash=hash_password(pw)))
+                print(f"created: {email} ({role})")
+            elif os.getenv(ENV_NAMES[role]):
+                user.password_hash = hash_password(pw)   # demo accounts only
+                user.is_active = True
+                print(f"password reset: {email}")
+            else:
+                print(f"exists: {email}")
+        db.commit()
+    finally:
+        db.close()
 
 if __name__ == "__main__":
     main()
